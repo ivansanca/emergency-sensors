@@ -46,3 +46,4 @@ jobs:
           -Dsonar.organization=ivansanca
           -Dsonar.projectKey=emergency-sensors
           -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.qualitygate.wait=true

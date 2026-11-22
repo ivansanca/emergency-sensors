@@ -17,14 +17,16 @@ import java.lang.annotation.Target;
  * therefore the same container. The tests are skipped, not failed, when Docker
  * is not available; in GitHub Actions Docker is always available. Ingestion
  * is forced off and the key emptied instead of relying on the defaults, so no
- * test calls NASA whatever the properties file or the environment say.
+ * test calls NASA whatever the properties file or the environment say. The
+ * detector stays on, as in production, and the core's topic is created by
+ * {@link CoreTopics}.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"sensors.ingestion.enabled=false", "sensors.firms.map-key="})
-@Import(IntegrationTestContainers.class)
+@Import({IntegrationTestContainers.class, CoreTopics.class})
 @Testcontainers(disabledWithoutDocker = true)
 public @interface IntegrationTest {
 }

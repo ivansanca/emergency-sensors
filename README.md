@@ -71,6 +71,26 @@ La ingesta está desactivada por defecto porque solo una instancia debe consulta
 FIRMS. El detector, en cambio, puede ejecutarse en varias instancias: se reparten
 las 6 particiones de `sensor-satellite-hotspots`.
 
+### Reproducir un día pasado (perfil `replay`)
+
+El perfil [`replay`](src/main/resources/application-replay.properties) vuelve a
+pasar por toda la cadena los focos del 21 y 22 de marzo de 2026, un caso con
+varios incendios forestales en Cantabria:
+
+```bash
+export FIRMS_MAP_KEY=tu-clave
+./mvnw clean package
+java -jar target/emergency-sensors-0.0.1-SNAPSHOT.jar --spring.profiles.active=replay
+```
+
+El perfil activa la ingesta, fija `sensors.firms.date=2026-03-21` con
+`sensors.firms.day-range=2` y consulta las fuentes de calidad estándar (SP) de los
+tres satélites VIIRS, porque FIRMS solo guarda los datos casi en tiempo real (NRT)
+unos meses. También quita el límite de antigüedad del detector, que si no
+descartaría todos los focos. Para otro día basta con cambiar la fecha, por ejemplo
+`--sensors.firms.date=2026-08-15`, comprobando antes que las fuentes cubren ese día
+(`/api/data_availability` de FIRMS).
+
 ## Configuración
 
 Todo está en [`application.properties`](src/main/resources/application.properties).
@@ -83,6 +103,7 @@ Lo más habitual:
 | `FIRMS_MAP_KEY` (variable de entorno)   | —                     | Clave de FIRMS; sin ella no se consulta            |
 | `sensors.firms.datasets`                | NOAA-20 y NOAA-21 NRT | Satélites consultados                              |
 | `sensors.firms.poll-interval`           | `PT15M`               | Intervalo entre consultas                          |
+| `sensors.firms.date`                    | vacío                 | Primer día a consultar (`yyyy-MM-dd`); vacío = los últimos `day-range` días |
 | `sensors.detector.accepted-confidences` | `n,h`                 | Confianzas VIIRS aceptadas                         |
 | `sensors.detector.max-age`              | `PT24H`               | Antigüedad máxima de un foco (vacío = sin límite)  |
 | `sensors.detector.static-heat-sources`  | 2 fuentes             | Fuentes de calor fijas y su radio                  |

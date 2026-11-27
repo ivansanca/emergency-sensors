@@ -188,6 +188,7 @@ class FirmsPollerTest {
                 datasets,
                 "-4.95,42.65,-3.05,43.60",
                 2,
+                null,
                 Duration.ofSeconds(10),
                 Duration.ofSeconds(60),
                 Duration.ofHours(48));

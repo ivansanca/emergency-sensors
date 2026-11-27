@@ -51,6 +51,11 @@ public class FirmsPoller {
         if (!properties.hasMapKey()) {
             log.warn("FIRMS_MAP_KEY no está configurada: no se consultará FIRMS");
         }
+        // A replay looks like live ingestion in every other log line.
+        if (properties.date() != null) {
+            log.info("Reproducción de FIRMS: {} día(s) desde el {} en {}",
+                    properties.dayRange(), properties.date(), properties.datasets());
+        }
     }
 
     @Scheduled(

@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -54,6 +55,19 @@ class FirmsClientTest {
 
         assertThat(client(Duration.ofSeconds(5)).fetchCsv(DATASET)).isEqualTo(csv);
         server.verify(getRequestedFor(urlEqualTo(PATH)));
+    }
+
+    @Test
+    void withADateTheQueryCoversTheDaysFromThatDate() {
+        String csv = FirmsCsvParserTest.NRT_HEADER + "\n";
+        server.stubFor(get(urlEqualTo(PATH + "/2026-03-21"))
+                .willReturn(aResponse().withStatus(200).withBody(csv)));
+
+        FirmsClient client = client(
+                server.baseUrl(), Duration.ofSeconds(5), LocalDate.of(2026, 3, 21));
+
+        assertThat(client.fetchCsv(DATASET)).isEqualTo(csv);
+        server.verify(getRequestedFor(urlEqualTo(PATH + "/2026-03-21")));
     }
 
     @Test
@@ -168,12 +182,17 @@ class FirmsClientTest {
     }
 
     private FirmsClient client(String baseUrl, Duration readTimeout) {
+        return client(baseUrl, readTimeout, null);
+    }
+
+    private FirmsClient client(String baseUrl, Duration readTimeout, LocalDate date) {
         FirmsProperties properties = new FirmsProperties(
                 MAP_KEY,
                 baseUrl,
                 List.of(DATASET),
                 AREA,
                 2,
+                date,
                 Duration.ofSeconds(2),
                 readTimeout,
                 Duration.ofHours(48));

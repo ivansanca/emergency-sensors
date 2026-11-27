@@ -7,10 +7,12 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -23,12 +25,20 @@ import java.util.List;
  * <p>
  * The base URL and the area are checked at startup: both end up in the request
  * URI, the area as part of its template.
+ * <p>
+ * {@code date} is optional. Without it each query covers the last
+ * {@code dayRange} days, which is what live ingestion needs. With it the
+ * queries cover {@code dayRange} days starting on that date, so that a past
+ * day can be replayed through the whole pipeline. A date that cannot be read
+ * as {@code yyyy-MM-dd} stops the startup.
  *
  * @param mapKey        FIRMS MAP_KEY; it travels in the URL path
  * @param baseUrl       base URL of the FIRMS API
  * @param datasets      FIRMS sources to query, e.g. {@code VIIRS_NOAA20_NRT}
  * @param area          west,south,east,north bounding box
  * @param dayRange      days per query; 1 is only the current UTC day
+ * @param date          first day of the queries, or {@code null} for the
+ *                      last {@code dayRange} days
  * @param connectTimeout connection timeout of each request
  * @param readTimeout   time allowed to receive the response
  * @param sentCacheTtl  how long a published detection id is remembered
@@ -47,6 +57,7 @@ public record FirmsProperties(
                 message = "debe tener cuatro números separados por comas: oeste,sur,este,norte")
         String area,
         @Min(1) @Max(5) int dayRange,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
         @NotNull Duration connectTimeout,
         @NotNull Duration readTimeout,
         @NotNull Duration sentCacheTtl) {
@@ -67,6 +78,7 @@ public record FirmsProperties(
                 + ", datasets=" + datasets
                 + ", area=" + area
                 + ", dayRange=" + dayRange
+                + ", date=" + date
                 + ", connectTimeout=" + connectTimeout
                 + ", readTimeout=" + readTimeout
                 + ", sentCacheTtl=" + sentCacheTtl + "]";

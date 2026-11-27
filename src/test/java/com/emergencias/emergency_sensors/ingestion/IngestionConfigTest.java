@@ -11,6 +11,8 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -74,6 +76,53 @@ class IngestionConfigTest {
                         "sensors.ingestion.enabled=true",
                         "sensors.firms.day-range=10")
                 .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void withoutADateTheLastDaysAreQueried() {
+        runner.withPropertyValues("sensors.ingestion.enabled=true", "sensors.firms.date=")
+                .run(context -> assertThat(context.getBean(FirmsProperties.class).date())
+                        .isNull());
+    }
+
+    @Test
+    void dateIsReadAsAnIsoDate() {
+        runner.withPropertyValues(
+                        "sensors.ingestion.enabled=true",
+                        "sensors.firms.date=2026-03-21")
+                .run(context -> assertThat(context.getBean(FirmsProperties.class).date())
+                        .isEqualTo(LocalDate.of(2026, 3, 21)));
+    }
+
+    @Test
+    void invalidDateStopsTheStartupNamingTheProperty() {
+        runner.withPropertyValues(
+                        "sensors.ingestion.enabled=true",
+                        "sensors.firms.date=21/03/2026")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .rootCause()
+                            .hasMessageContaining("21/03/2026");
+                    assertThat(context.getStartupFailure())
+                            .hasStackTraceContaining("sensors.firms.date");
+                });
+    }
+
+    @Test
+    void replayProfileQueriesTheStandardQualityDataOfTheFires() throws IOException {
+        Properties replay = PropertiesLoaderUtils
+                .loadProperties(new ClassPathResource("application-replay.properties"));
+
+        assertThat(replay.getProperty("sensors.ingestion.enabled")).isEqualTo("true");
+        assertThat(replay.getProperty("sensors.firms.date")).isEqualTo("2026-03-21");
+        assertThat(replay.getProperty("sensors.firms.day-range")).isEqualTo("2");
+        assertThat(replay.getProperty("sensors.firms.datasets"))
+                .isEqualTo("VIIRS_SNPP_SP,VIIRS_NOAA20_SP,VIIRS_NOAA21_SP");
+        // Empty: no age limit, the hotspots are months old.
+        assertThat(replay.getProperty("sensors.detector.max-age")).isEmpty();
+        // The key only ever comes from FIRMS_MAP_KEY.
+        assertThat(replay.stringPropertyNames()).doesNotContain("sensors.firms.map-key");
     }
 
     @Test

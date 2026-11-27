@@ -9,9 +9,13 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Downloads the active fire CSV of one FIRMS source for the configured area.
+ * Downloads the active fire CSV of one FIRMS source for the configured area,
+ * for the last days or, when a date is configured, for the days from that
+ * date on.
  * <p>
  * FIRMS answers errors with a 4xx status and a plain-text message, and a
  * correct answer is also {@code text/plain}, so the status is checked here
@@ -58,9 +62,18 @@ public class FirmsClient {
         String path = "/api/area/csv/{mapKey}/{dataset}/"
                 + properties.area() + "/{dayRange}";
 
+        // With a date FIRMS returns that day and the next dayRange - 1 days;
+        // without it, the last dayRange days.
+        List<Object> variables = new ArrayList<>(
+                List.of(properties.mapKey(), dataset, properties.dayRange()));
+        if (properties.date() != null) {
+            path += "/{date}";
+            variables.add(properties.date());
+        }
+
         try {
             return restClient.get()
-                    .uri(path, properties.mapKey(), dataset, properties.dayRange())
+                    .uri(path, variables.toArray())
                     .exchange((request, response) -> readBody(dataset, response));
         } catch (FirmsApiException exception) {
             throw exception;

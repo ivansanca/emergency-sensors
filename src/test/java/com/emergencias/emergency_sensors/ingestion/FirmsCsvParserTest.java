@@ -110,6 +110,19 @@ class FirmsCsvParserTest {
     }
 
     @Test
+    void standardQualityTypeIsReadButDoesNotFilter() {
+        // type 2 is a static land source, such as a steel mill. The parser
+        // keeps it: discarding hotspots is the detector's job.
+        String csv = NRT_HEADER + ",type\n"
+                + "43.44226,-3.84419,340.1,0.39,0.36,2026-03-21,129,N,VIIRS,n,2,290.2,5.1,N,2\n"
+                + "43.10741,-4.19757,316.59,0.39,0.36,2026-03-21,219,N,VIIRS,h,2,277.4,1.54,N,0\n";
+
+        List<FirmsHotspot> hotspots = parser.parse(csv, "VIIRS_SNPP_SP", FETCHED_AT);
+
+        assertThat(hotspots).extracting(FirmsHotspot::type).containsExactly(2, 0);
+    }
+
+    @Test
     void emptyOptionalColumnsStayNull() {
         String csv = NRT_HEADER + "\n"
                 + "43.10741,-4.19757,,,,2026-03-21,219,N21,,n,,,,N\n";
